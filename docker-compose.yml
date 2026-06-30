@@ -20,8 +20,11 @@ services:
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.nana-jewellery-http.rule=Host(`design.krish.in.net`)
       - traefik.http.routers.nana-jewellery-http.entrypoints=web
+      - traefik.http.routers.nana-jewellery-https.rule=Host(`design.krish.in.net`)
+      - traefik.http.routers.nana-jewellery-https.entrypoints=websecure
       - traefik.http.services.nana-jewellery-svc.loadbalancer.server.port=3000
       - traefik.http.routers.nana-jewellery-http.service=nana-jewellery-svc
+      - traefik.http.routers.nana-jewellery-https.service=nana-jewellery-svc
     restart: unless-stopped
 
 volumes:
