@@ -1,8 +1,6 @@
 services:
   nana-jewellery:
     build: .
-    ports:
-      - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -15,7 +13,13 @@ services:
       - FREEPIK_IMAGE_MODEL=${FREEPIK_IMAGE_MODEL:-nano-banana-pro-flash}
     volumes:
       - nana-jewellery-data:/app/data
+    networks:
+      - dokploy-network
     restart: unless-stopped
 
 volumes:
   nana-jewellery-data:
+
+networks:
+  dokploy-network:
+    external: true
