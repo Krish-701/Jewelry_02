@@ -1,0 +1,15 @@
+services:
+  nana-jewellery:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NEURALWATT_API_KEY=${NEURALWATT_API_KEY}
+      - NEURALWATT_BASE_URL=${NEURALWATT_BASE_URL:-https://api.neuralwatt.com/v1}
+      - NEURALWATT_MODEL=${NEURALWATT_MODEL:-kimi-k2.6}
+      - FREEPIK_API_KEY=${FREEPIK_API_KEY}
+      - FREEPIK_BASE_URL=${FREEPIK_BASE_URL:-https://api.magnific.com}
+      - FREEPIK_IMAGE_MODEL=${FREEPIK_IMAGE_MODEL:-nano-banana-pro-flash}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
