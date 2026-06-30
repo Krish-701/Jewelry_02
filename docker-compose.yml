@@ -4,6 +4,9 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
       - NEURALWATT_API_KEY=${NEURALWATT_API_KEY}
       - NEURALWATT_BASE_URL=${NEURALWATT_BASE_URL:-https://api.neuralwatt.com/v1}
       - NEURALWATT_MODEL=${NEURALWATT_MODEL:-kimi-k2.6}
@@ -11,5 +14,8 @@ services:
       - FREEPIK_BASE_URL=${FREEPIK_BASE_URL:-https://api.magnific.com}
       - FREEPIK_IMAGE_MODEL=${FREEPIK_IMAGE_MODEL:-nano-banana-pro-flash}
     volumes:
-      - ./data:/app/data
+      - nana-jewellery-data:/app/data
     restart: unless-stopped
+
+volumes:
+  nana-jewellery-data:
