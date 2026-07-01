@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { loadSession, saveSession } from '@/lib/session-memory';
+import { isValidSessionId, loadSession, saveSession } from '@/lib/session-memory';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    if (!sessionId) {
-        return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+    if (!sessionId || !isValidSessionId(sessionId)) {
+        return NextResponse.json({ error: 'Valid sessionId required' }, { status: 400 });
     }
     const session = loadSession(sessionId);
     if (!session) {
@@ -17,8 +17,8 @@ export async function GET(request) {
 export async function POST(request) {
     try {
         const { sessionId, analysis, sizes, settings } = await request.json();
-        if (!sessionId) {
-            return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+        if (!sessionId || !isValidSessionId(sessionId)) {
+            return NextResponse.json({ error: 'Valid sessionId required' }, { status: 400 });
         }
         const session = saveSession(sessionId, { analysis, sizes, settings });
         return NextResponse.json({ session });

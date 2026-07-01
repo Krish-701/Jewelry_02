@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { studioEntryUrl } from '@/lib/studio-session-client';
 
 export default function Header() {
     const pathname = usePathname();
@@ -23,13 +24,13 @@ export default function Header() {
                 </div>
 
                 <nav className="header-nav">
-                    <Link href="/studio" className={pathname === '/studio' ? 'nav-active' : ''}>
+                    <Link href={studioEntryUrl()} className={pathname === '/studio' ? 'nav-active' : ''}>
                         Studio
                     </Link>
                     <Link href="/history" className={pathname === '/history' ? 'nav-active' : ''}>
                         History
                     </Link>
-                    <Link href="/studio" className="btn btn-primary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.82rem' }}>
+                    <Link href={studioEntryUrl()} className="btn btn-primary" style={{ padding: '0.45rem 1.1rem', fontSize: '0.82rem' }}>
                         ✦ Open Studio
                     </Link>
                 </nav>

@@ -3,7 +3,7 @@ import { generateImage } from '@/lib/ai-provider';
 import { getTemplateById } from '@/lib/templates';
 import { saveImage, savePrompt, saveHistoryEntry, updateHistoryEntry } from '@/lib/storage';
 import { verifyAndBuildPrompt, resolveConflicts } from '@/lib/prompt-verifier';
-import { buildSessionPromptMemory, recordGeneration, saveSession } from '@/lib/session-memory';
+import { buildSessionPromptMemory, isValidSessionId, recordGeneration, saveSession } from '@/lib/session-memory';
 import { buildEnforcedSizeBlock } from '@/lib/size-normalizer';
 
 export const maxDuration = 300;
@@ -26,6 +26,8 @@ export async function POST(request) {
             consistencyMode = 'exact',
             sessionId = null,
         } = await request.json();
+
+        const safeSessionId = sessionId && isValidSessionId(sessionId) ? sessionId : null;
 
         if (!images || images.length === 0) {
             return NextResponse.json({ error: 'No images provided' }, { status: 400 });
@@ -69,8 +71,8 @@ export async function POST(request) {
             sizes,
         };
 
-        if (sessionId) {
-            saveSession(sessionId, {
+        if (safeSessionId) {
+            saveSession(safeSessionId, {
                 analysis: analysis || {},
                 sizes,
                 settings: {
@@ -84,7 +86,7 @@ export async function POST(request) {
             });
         }
 
-        const sessionMemory = sessionId ? buildSessionPromptMemory(sessionId) : '';
+        const sessionMemory = safeSessionId ? buildSessionPromptMemory(safeSessionId) : '';
 
         // STEP 3: Verify and build prompt with full validation
         const verification = verifyAndBuildPrompt({
@@ -134,9 +136,9 @@ export async function POST(request) {
             scaleHints: verification.scaleHints || [],
         });
 
-        if (sessionId) {
+        if (safeSessionId) {
             const enforced = buildEnforcedSizeBlock(verification.sizeValidation || []);
-            recordGeneration(sessionId, {
+            recordGeneration(safeSessionId, {
                 jobId: result.jobId,
                 analysis: analysis || {},
                 sizes,

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { studioEntryUrl } from '@/lib/studio-session-client';
 
 export default function HomePage() {
     return (
@@ -19,7 +20,7 @@ export default function HomePage() {
                         North Indian, American & custom styles.
                     </p>
                     <div className="hero-buttons">
-                        <Link href="/studio" className="btn btn-primary">
+                        <Link href={studioEntryUrl()} className="btn btn-primary">
                             ✦ Open Studio
                         </Link>
 

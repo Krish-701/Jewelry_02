@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
     createClientSessionId,
     loadClientSession,
     saveClientSession,
     clearClientSession,
+    isNewSessionRequest,
 } from '@/lib/studio-session-client';
 import ImageUploader from '@/components/ImageUploader';
 import TemplateSelector from '@/components/TemplateSelector';
@@ -40,7 +41,7 @@ function detectAspectRatio(width, height) {
     return '9:16';
 }
 
-export default function StudioPage() {
+function StudioPageContent() {
     const [step, setStep] = useState(1);
     const [images, setImages] = useState([]);
     const [analysis, setAnalysis] = useState(null);
@@ -55,6 +56,7 @@ export default function StudioPage() {
     const [error, setError] = useState('');
     const [promptPreview, setPromptPreview] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // ── New preset state ──────────────────
     const [backgroundPreset, setBackgroundPreset] = useState(null);
@@ -67,9 +69,37 @@ export default function StudioPage() {
     const [generationCount, setGenerationCount] = useState(0);
     const restoredRef = useRef(false);
 
+    const resetStudioState = useCallback(() => {
+        clearClientSession();
+        setSessionId(null);
+        setGenerationCount(0);
+        setStep(1);
+        setImages([]);
+        setAnalysis(null);
+        setSizes({});
+        setResults([]);
+        setError('');
+        setPromptPreview('');
+        setExtraPrompt('');
+        setOutputSize('portrait');
+        setBackgroundPreset(null);
+        setReligionPreset(null);
+        setDressCodePreset(null);
+        setCustomModelPhoto(null);
+        setConsistencyMode('exact');
+        setDetectedAspectRatio(null);
+    }, []);
+
     useEffect(() => {
         if (restoredRef.current) return;
         restoredRef.current = true;
+
+        if (isNewSessionRequest(searchParams)) {
+            resetStudioState();
+            router.replace('/studio');
+            return;
+        }
+
         const saved = loadClientSession();
         if (!saved) return;
         setSessionId(saved.sessionId || createClientSessionId());
@@ -85,7 +115,7 @@ export default function StudioPage() {
         if (saved.dressCodePreset) setDressCodePreset(saved.dressCodePreset);
         if (saved.consistencyMode) setConsistencyMode(saved.consistencyMode);
         if (saved.generationCount) setGenerationCount(saved.generationCount);
-    }, []);
+    }, [searchParams, router, resetStudioState]);
 
     useEffect(() => {
         if (!sessionId && images.length === 0 && !analysis) return;
@@ -323,16 +353,7 @@ export default function StudioPage() {
     }, [images, selectedTemplate, analysis, sizes, customPrompt, outputSize, extraPrompt, backgroundPreset, religionPreset, dressCodePreset, customModelPhoto, consistencyMode, router, sessionId, syncSessionToServer]);
 
     const handleReset = () => {
-        clearClientSession();
-        setSessionId(null);
-        setGenerationCount(0);
-        setStep(1); setImages([]); setAnalysis(null);
-        setSizes({});
-        setResults([]); setError(''); setPromptPreview('');
-        setExtraPrompt(''); setOutputSize('portrait');
-        setBackgroundPreset(null); setReligionPreset(null);
-        setDressCodePreset(null); setCustomModelPhoto(null);
-        setConsistencyMode('exact');
+        resetStudioState();
     };
 
     return (
@@ -561,5 +582,19 @@ export default function StudioPage() {
 
             </div>
         </div>
+    );
+}
+
+export default function StudioPage() {
+    return (
+        <Suspense fallback={
+            <div className="studio">
+                <div className="studio-container">
+                    <LoadingSpinner message="Loading studio…" />
+                </div>
+            </div>
+        }>
+            <StudioPageContent />
+        </Suspense>
     );
 }
