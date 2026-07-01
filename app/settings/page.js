@@ -100,6 +100,7 @@ export default function SettingsPage() {
                                 <div><span style={{ color: 'var(--accent-gold-light)' }}>FREEPIK_API_KEY</span>=your-key-here</div>
                                 <div><span style={{ color: 'var(--accent-gold-light)' }}>FREEPIK_BASE_URL</span>=https://api.magnific.com</div>
                                 <div><span style={{ color: 'var(--accent-gold-light)' }}>FREEPIK_IMAGE_MODEL</span>=nano-banana-pro-flash</div>
+                                <div><span style={{ color: 'var(--accent-gold-light)' }}>PUBLIC_BASE_URL</span>=https://design.krish.in.net</div>
                             </div>
                         </div>
 
