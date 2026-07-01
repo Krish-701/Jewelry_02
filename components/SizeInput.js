@@ -137,8 +137,7 @@ export default function SizeInput({ analysis, sizes, onSizesChange }) {
                     <span>📏</span> Size Reference
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    Enter the actual size for accurate representation on the model. 
-                    This helps the AI render the jewelry at the correct scale.
+                    Optional — enter size for precise scale. If left blank, AI estimates from your reference images.
                 </p>
 
                 <div className="size-input-row">
@@ -181,7 +180,7 @@ export default function SizeInput({ analysis, sizes, onSizesChange }) {
                 <span>📏</span> Size Reference for Each Piece
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                Enter the actual size for each jewelry piece. This ensures accurate scale when rendered on the model.
+                Optional size for each piece. Leave blank and AI will estimate scale from your reference photos.
                 <br />
                 <span style={{ color: 'var(--accent-gold)', fontSize: '0.8rem' }}>
                     ✦ Tip: Use a measuring tape or refer to the actual product specifications

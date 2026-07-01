@@ -42,6 +42,25 @@ export default function JewelryAnalysis({ analysis }) {
                 )}
             </div>
 
+            {analysis.pieces?.length > 0 && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Focus pieces detected
+                    </span>
+                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {analysis.pieces.map((piece, i) => (
+                            <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                <strong style={{ color: 'var(--text-primary)' }}>{piece.type || `Piece ${i + 1}`}</strong>
+                                {piece.estimatedSize && (
+                                    <span> — AI size estimate: {piece.estimatedSize}</span>
+                                )}
+                                {piece.description && <span> ({piece.description})</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {analysis.stones?.length > 0 && (
                 <div style={{ marginBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stones</span>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { hasConfiguredSizes } from '@/lib/size-normalizer';
+
 import {
     createClientSessionId,
     loadClientSession,
@@ -166,12 +166,6 @@ export default function StudioPage() {
     }, [images, sessionId, syncSessionToServer]);
 
     const handleGenerate = useCallback(async () => {
-        if (!hasConfiguredSizes(analysis, sizes)) {
-            setError('Please enter jewelry size before generating — this ensures correct scale on the model (e.g. ring India size 16, or diameter in cm).');
-            setStep(3);
-            return;
-        }
-
         setLoading(true);
         setLoadingMessage('Verifying settings and preparing generation...');
         setError('');
@@ -436,19 +430,13 @@ export default function StudioPage() {
 
                         <SizeInput analysis={analysis} sizes={sizes} onSizesChange={setSizes} />
 
-                        {!hasConfiguredSizes(analysis, sizes) && (
-                            <p style={{ color: 'var(--accent-rose)', fontSize: '0.9rem', marginTop: '1rem' }}>
-                                Size is required for accurate jewelry scale on the model.
-                            </p>
-                        )}
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '1rem' }}>
+                            Optional: add sizes for precise scale. If skipped, AI estimates size from your reference images.
+                        </p>
 
                         <div className="step-nav">
                             <button className="btn btn-secondary" onClick={() => setStep(2)}>← Back to Analysis</button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => setStep(4)}
-                                disabled={!hasConfiguredSizes(analysis, sizes)}
-                            >
+                            <button className="btn btn-primary" onClick={() => setStep(4)}>
                                 🎭 Choose Template →
                             </button>
                         </div>
