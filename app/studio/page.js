@@ -166,7 +166,7 @@ function StudioPageContent() {
     const handleAnalyze = useCallback(async () => {
         if (images.length === 0) { setError('Please upload at least one jewelry image'); return; }
         setLoading(true);
-        setLoadingMessage(`Analyzing ${images.length} reference image${images.length > 1 ? 's' : ''} together…`);
+        setLoadingMessage(`Analyzing ${images.length} reference image${images.length > 1 ? 's' : ''} together… (may take up to 2 minutes)`);
         setError('');
         try {
             const allImages = images.map(img => ({ base64: img.base64, mimeType: img.mimeType }));
