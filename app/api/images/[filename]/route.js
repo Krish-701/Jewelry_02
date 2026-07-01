@@ -13,7 +13,11 @@ export async function GET(request, { params }) {
         }
         
         const ext = path.extname(filename).toLowerCase();
-        const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+        const mimeType = ext === '.png'
+            ? 'image/png'
+            : ext === '.webp'
+                ? 'image/webp'
+                : 'image/jpeg';
         
         const buffer = fs.readFileSync(filepath);
         

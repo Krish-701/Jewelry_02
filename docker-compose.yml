@@ -11,6 +11,7 @@ services:
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - FREEPIK_BASE_URL=${FREEPIK_BASE_URL:-https://api.magnific.com}
       - FREEPIK_IMAGE_MODEL=${FREEPIK_IMAGE_MODEL:-nano-banana-pro-flash}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-https://design.krish.in.net}
     volumes:
       - nana-jewellery-data:/app/data
     networks:
