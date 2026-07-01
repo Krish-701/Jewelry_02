@@ -6,8 +6,8 @@ import { useState, useEffect } from 'react';
 const SIZE_CONFIGS = {
     'ring': {
         label: 'Ring Size',
-        placeholder: 'e.g., 16 (India) or 7 (US)',
-        hint: 'Enter ring size number',
+        placeholder: 'e.g., 16',
+        hint: 'India ring size (e.g. 16 ≈ 1.8cm diameter) — required for correct scale on model hand',
         unit: 'India size',
     },
     'earrings': {

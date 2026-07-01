@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { hasConfiguredSizes } from '@/lib/size-normalizer';
+import {
+    createClientSessionId,
+    loadClientSession,
+    saveClientSession,
+    clearClientSession,
+} from '@/lib/studio-session-client';
 import ImageUploader from '@/components/ImageUploader';
 import TemplateSelector from '@/components/TemplateSelector';
 import PresetDropdowns from '@/components/PresetDropdowns';
@@ -56,8 +63,64 @@ export default function StudioPage() {
     const [customModelPhoto, setCustomModelPhoto] = useState(null);
     const [consistencyMode, setConsistencyMode] = useState('exact');
     const [detectedAspectRatio, setDetectedAspectRatio] = useState(null);
+    const [sessionId, setSessionId] = useState(null);
+    const [generationCount, setGenerationCount] = useState(0);
+    const restoredRef = useRef(false);
 
+    useEffect(() => {
+        if (restoredRef.current) return;
+        restoredRef.current = true;
+        const saved = loadClientSession();
+        if (!saved) return;
+        setSessionId(saved.sessionId || createClientSessionId());
+        if (saved.step) setStep(saved.step);
+        if (saved.analysis) setAnalysis(saved.analysis);
+        if (saved.sizes) setSizes(saved.sizes);
+        if (saved.images?.length) setImages(saved.images);
+        if (saved.selectedTemplate) setSelectedTemplate(saved.selectedTemplate);
+        if (saved.extraPrompt) setExtraPrompt(saved.extraPrompt);
+        if (saved.outputSize) setOutputSize(saved.outputSize);
+        if (saved.backgroundPreset) setBackgroundPreset(saved.backgroundPreset);
+        if (saved.religionPreset) setReligionPreset(saved.religionPreset);
+        if (saved.dressCodePreset) setDressCodePreset(saved.dressCodePreset);
+        if (saved.consistencyMode) setConsistencyMode(saved.consistencyMode);
+        if (saved.generationCount) setGenerationCount(saved.generationCount);
+    }, []);
 
+    useEffect(() => {
+        if (!sessionId && images.length === 0 && !analysis) return;
+        saveClientSession({
+            sessionId: sessionId || createClientSessionId(),
+            step,
+            analysis,
+            sizes,
+            images,
+            selectedTemplate,
+            extraPrompt,
+            outputSize,
+            backgroundPreset,
+            religionPreset,
+            dressCodePreset,
+            consistencyMode,
+            generationCount,
+        });
+    }, [
+        sessionId, step, analysis, sizes, images, selectedTemplate, extraPrompt,
+        outputSize, backgroundPreset, religionPreset, dressCodePreset, consistencyMode, generationCount,
+    ]);
+
+    const syncSessionToServer = useCallback(async (id, payload) => {
+        if (!id) return;
+        try {
+            await fetch('/api/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: id, ...payload }),
+            });
+        } catch (e) {
+            console.warn('Session sync failed', e);
+        }
+    }, []);
 
     // Handle first image load for auto-ratio detection
     const handleFirstImageLoad = useCallback((dims) => {
@@ -84,23 +147,51 @@ export default function StudioPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Analysis failed');
+            const newSessionId = sessionId || createClientSessionId();
+            setSessionId(newSessionId);
             setAnalysis(data.analysis);
-            setSizes({}); // Reset sizes for new analysis
+            setSizes({});
+            setGenerationCount(0);
             setStep(2);
+            await syncSessionToServer(newSessionId, {
+                analysis: data.analysis,
+                sizes: {},
+                settings: { step: 2 },
+            });
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [images]);
+    }, [images, sessionId, syncSessionToServer]);
 
-    // Step 4 → Generate: Background verification then generate
     const handleGenerate = useCallback(async () => {
+        if (!hasConfiguredSizes(analysis, sizes)) {
+            setError('Please enter jewelry size before generating — this ensures correct scale on the model (e.g. ring India size 16, or diameter in cm).');
+            setStep(3);
+            return;
+        }
+
         setLoading(true);
         setLoadingMessage('Verifying settings and preparing generation...');
         setError('');
+
+        const activeSessionId = sessionId || createClientSessionId();
+        if (!sessionId) setSessionId(activeSessionId);
         
         try {
+            await syncSessionToServer(activeSessionId, {
+                analysis,
+                sizes,
+                settings: {
+                    templateId: selectedTemplate,
+                    backgroundPreset,
+                    religionPreset,
+                    dressCodePreset,
+                    outputSize,
+                    consistencyMode,
+                },
+            });
             // STEP 1: Background verification (runs automatically)
             const allImages = images.map(img => ({ base64: img.base64, mimeType: img.mimeType }));
             
@@ -173,11 +264,13 @@ export default function StudioPage() {
                         mimeType: customModelPhoto.mimeType,
                     } : null,
                     consistencyMode,
+                    sessionId: activeSessionId,
                 }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Generation failed');
 
+            setGenerationCount((c) => c + 1);
             setPromptPreview(data.prompt);
 
             const templateLabel = selectedTemplate.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -233,9 +326,12 @@ export default function StudioPage() {
         } finally {
             setLoading(false);
         }
-    }, [images, selectedTemplate, analysis, sizes, customPrompt, outputSize, extraPrompt, backgroundPreset, religionPreset, dressCodePreset, customModelPhoto, consistencyMode, router]);
+    }, [images, selectedTemplate, analysis, sizes, customPrompt, outputSize, extraPrompt, backgroundPreset, religionPreset, dressCodePreset, customModelPhoto, consistencyMode, router, sessionId, syncSessionToServer]);
 
     const handleReset = () => {
+        clearClientSession();
+        setSessionId(null);
+        setGenerationCount(0);
         setStep(1); setImages([]); setAnalysis(null);
         setSizes({});
         setResults([]); setError(''); setPromptPreview('');
@@ -256,6 +352,13 @@ export default function StudioPage() {
                 )}
 
                 <StepProgress currentStep={step} />
+
+                {sessionId && (
+                    <div className="glass-card" style={{ padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        Session active — your uploads, sizes, and settings are remembered for this workflow
+                        {generationCount > 0 && ` · ${generationCount} generation${generationCount > 1 ? 's' : ''} completed`}
+                    </div>
+                )}
 
                 {error && (
                     <div className="error-banner">
@@ -333,9 +436,19 @@ export default function StudioPage() {
 
                         <SizeInput analysis={analysis} sizes={sizes} onSizesChange={setSizes} />
 
+                        {!hasConfiguredSizes(analysis, sizes) && (
+                            <p style={{ color: 'var(--accent-rose)', fontSize: '0.9rem', marginTop: '1rem' }}>
+                                Size is required for accurate jewelry scale on the model.
+                            </p>
+                        )}
+
                         <div className="step-nav">
                             <button className="btn btn-secondary" onClick={() => setStep(2)}>← Back to Analysis</button>
-                            <button className="btn btn-primary" onClick={() => setStep(4)}>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setStep(4)}
+                                disabled={!hasConfiguredSizes(analysis, sizes)}
+                            >
                                 🎭 Choose Template →
                             </button>
                         </div>

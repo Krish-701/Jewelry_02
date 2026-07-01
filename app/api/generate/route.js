@@ -3,6 +3,8 @@ import { generateImage } from '@/lib/ai-provider';
 import { getTemplateById } from '@/lib/templates';
 import { saveImage, savePrompt, saveHistoryEntry, updateHistoryEntry } from '@/lib/storage';
 import { verifyAndBuildPrompt, resolveConflicts } from '@/lib/prompt-verifier';
+import { buildSessionPromptMemory, recordGeneration, saveSession } from '@/lib/session-memory';
+import { buildEnforcedSizeBlock } from '@/lib/size-normalizer';
 
 export const maxDuration = 300;
 
@@ -22,6 +24,7 @@ export async function POST(request) {
             dressCodePreset = null,
             customModelPhoto = null,
             consistencyMode = 'exact',
+            sessionId = null,
         } = await request.json();
 
         if (!images || images.length === 0) {
@@ -66,14 +69,39 @@ export async function POST(request) {
             sizes,
         };
 
+        if (sessionId) {
+            saveSession(sessionId, {
+                analysis: analysis || {},
+                sizes,
+                settings: {
+                    templateId,
+                    backgroundPreset,
+                    religionPreset,
+                    dressCodePreset,
+                    outputSize,
+                    consistencyMode,
+                },
+            });
+        }
+
+        const sessionMemory = sessionId ? buildSessionPromptMemory(sessionId) : '';
+
         // STEP 3: Verify and build prompt with full validation
         const verification = verifyAndBuildPrompt({
             analysis: analysis || {},
             template: resolved.template,
             imageCount: images.length,
             extraPrompt,
-            presetOptions
+            presetOptions,
+            sessionMemory,
         });
+
+        if (!verification.isValid) {
+            return NextResponse.json(
+                { error: verification.errors.join('. ') },
+                { status: 400 }
+            );
+        }
 
         // Log verification for debugging
         console.log('\n' + '='.repeat(70));
@@ -100,10 +128,24 @@ export async function POST(request) {
             });
         }
 
-        const result = await generateImage(prompt, allImages, { 
+        const result = await generateImage(prompt, allImages, {
             outputSize,
-            isCustomModel: templateId === 'custom-model' || !!customModelPhoto
+            isCustomModel: templateId === 'custom-model' || !!customModelPhoto,
+            scaleHints: verification.scaleHints || [],
         });
+
+        if (sessionId) {
+            const enforced = buildEnforcedSizeBlock(verification.sizeValidation || []);
+            recordGeneration(sessionId, {
+                jobId: result.jobId,
+                analysis: analysis || {},
+                sizes,
+                jewelryType: analysis?.type,
+                scaleSummary: enforced.compact || '',
+                templateId,
+                settings: { templateId, outputSize },
+            });
+        }
 
         if (!result.images && result.status !== 'processing') {
             return NextResponse.json(
